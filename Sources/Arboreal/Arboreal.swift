@@ -162,10 +162,11 @@ actor EffectRunner<Mailbox: MailboxProtocol & AnyObject> {
 /// path that can modify state, making code more easily testable and reliable.
 @Observable public final class Store<Model: ModelProtocol>: StoreProtocol {
     /// Logger for store. You can customize this in the initializer.
-    var logger: Logger
-    /// Runs all effects returned by model update functions.
+    @ObservationIgnored var logger: Logger
+    /// Runs all effects returned by model update function.
     @ObservationIgnored private lazy var runner = EffectRunner(self)
-    /// An environment for the model update function
+    /// Environment contains services that can be used by the update function
+    /// to generate side effects such as DB queries or API calls.
     @ObservationIgnored public var environment: Model.Environment
     
     /// A read-only view of the current state.
@@ -179,7 +180,7 @@ actor EffectRunner<Mailbox: MailboxProtocol & AnyObject> {
     ///   - state: the initial state for the store. Must conform to
     ///     `ModelProtocol`.
     ///   - `environment`: an environment with services that can be used by the
-    ///     model to create side-effects.
+    ///     model to generate side-effects such as DB queries or API calls.
     public init(
         state: Model,
         environment: Model.Environment,
