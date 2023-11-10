@@ -20,6 +20,7 @@ final class BindingTests: XCTestCase {
         private(set) var text = ""
         private(set) var edits: Int = 0
         
+        @MainActor
         func update(
             action: Action,
             environment: Void
@@ -42,7 +43,7 @@ final class BindingTests: XCTestCase {
     }
     
     /// Test creating binding for an address
-    func testBinding() async throws {
+    func testBinding() throws {
         let store = Store(
             state: Model(),
             environment: ()
@@ -70,7 +71,7 @@ final class BindingTests: XCTestCase {
     }
     
     /// Test creating binding for an address
-    func testBindingMethod() async throws {
+    func testBindingMethod() throws {
         let store = Store(
             state: Model(),
             environment: ()

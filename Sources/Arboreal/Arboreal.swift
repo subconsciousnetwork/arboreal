@@ -20,7 +20,7 @@ public protocol ModelProtocol {
     /// Update model in response to action, returning any side-effects (Fx).
     /// Update also receives an environment, which contains services it can
     /// use to produce side-effects.
-    mutating func update(
+    @MainActor mutating func update(
         action: Action,
         environment: Environment
     ) -> Fx<Action>
@@ -167,7 +167,7 @@ actor EffectRunner<Mailbox: MailboxProtocol & AnyObject> {
     @ObservationIgnored private lazy var runner = EffectRunner(self)
     /// An environment for the model update function
     @ObservationIgnored public var environment: Model.Environment
-
+    
     /// A read-only view of the current state.
     /// Nested models and other reference types should also mark their
     /// properties read-only. All state updates should go through
@@ -197,7 +197,7 @@ actor EffectRunner<Mailbox: MailboxProtocol & AnyObject> {
     /// Calls the update method of the underlying model to update state and
     /// generate effects. Effects are run and the resulting actions are sent
     /// back into store, in whatever order the effects complete.
-    public func send(_ action: Model.Action) -> Void {
+    @MainActor public func send(_ action: Model.Action) -> Void {
         let actionDescription = String(describing: action)
         logger.debug("Action: \(actionDescription)")
         let fx = state.update(
@@ -244,7 +244,7 @@ public struct ViewStore<Model: ModelProtocol>: StoreProtocol {
     }
 
     /// Send an action to the underlying store through ViewStore.
-    public func send(_ action: Model.Action) {
+    @MainActor public func send(_ action: Model.Action) {
         self._send(action)
     }
 }
