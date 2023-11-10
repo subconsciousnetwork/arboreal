@@ -166,7 +166,7 @@ actor EffectRunner<Mailbox: MailboxProtocol & AnyObject> {
     /// Runs all effects returned by model update functions.
     @ObservationIgnored private lazy var runner = EffectRunner(self)
     /// An environment for the model update function
-    @ObservationIgnored var environment: Model.Environment
+    @ObservationIgnored public var environment: Model.Environment
 
     /// A read-only view of the current state.
     /// Nested models and other reference types should also mark their
