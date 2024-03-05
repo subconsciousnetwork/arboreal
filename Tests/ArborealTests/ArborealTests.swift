@@ -32,8 +32,8 @@ final class ArborealTests: XCTestCase {
             environment: ()
         )
         
-        await store.send(.setText("Foo"))
-        
+        await store.transact(.setText("Foo"))
+
         XCTAssertEqual(
             store.state.text,
             "Foo"

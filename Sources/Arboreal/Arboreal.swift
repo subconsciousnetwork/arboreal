@@ -13,29 +13,39 @@ import os
 /// A model is any type that knows how to update itself in response to actions.
 /// Models can be value or reference types. It's typical to create
 /// `@Observable` models.
-public protocol ModelProtocol {
+public protocol ModelProtocol: AnyObject {
     associatedtype Action
     associatedtype Environment
 
     /// Update model in response to action, returning any side-effects (Fx).
     /// Update also receives an environment, which contains services it can
     /// use to produce side-effects.
-    @MainActor mutating func update(
+    @MainActor func update(
         action: Action,
         environment: Environment
     ) -> Fx<Action>
 }
 
-/// A mailbox is any type that implements a send method which can receive
-/// actions. Stores are mailboxes.
-public protocol MailboxProtocol {
+/// A transactable is any object that implements a `transact` method which can
+/// receive actions and update itself. Stores are transactables.
+public protocol TransactableProtocol {
     associatedtype Action
 
-    func send(_ action: Action)
+    func transact(_ action: Action)
+}
+
+public extension TransactableProtocol {
+    /// Send an action to the transactable.
+    /// Ensures that mutation happens on the main actor.
+    func send(_ action: Action) {
+        Task { @MainActor in
+            self.transact(action)
+        }
+    }
 }
 
 /// Stores hold state and can receive actions via `send`.
-public protocol StoreProtocol: MailboxProtocol {
+public protocol StoreProtocol: TransactableProtocol {
     associatedtype Model: ModelProtocol where Model.Action == Action
 
     /// State should be get-only for stores.
@@ -119,28 +129,28 @@ public struct Fx<Action> {
 /// EffectRunner is an actor that runs all effects for a given store.
 /// Effects are isolated to this actor, keeping them off the main thread, and
 /// local to this effect runner.
-actor EffectRunner<Mailbox: MailboxProtocol & AnyObject> {
-    /// Mailbox to notify when effect completes.
-    /// We keep a weak reference to the mailbox, since it is expected
-    /// to hold a reference to this EffectRunner.
-    private weak var mailbox: Mailbox?
+actor EffectRunner<T: TransactableProtocol & AnyObject> {
+    /// Transactable to notify when effect completes.
+    /// We keep a weak reference to the transactable, since it is expected
+    /// to hold a strong reference to this EffectRunner.
+    private weak var subject: T?
     
     /// Create a new effect runner.
     /// - Parameters:
-    ///   - mailbox: the mailbox to send actions tos
-    public init(_ mailbox: Mailbox) {
-        self.mailbox = mailbox
+    ///   - subject: the transactable to send actions to
+    public init(_ subject: T) {
+        self.subject = subject
     }
     
     /// Run a batch of effects in parallel.
-    /// Actions are sent to mailbox in whatever order the tasks complete.
+    /// Actions are sent to transactable in whatever order the tasks complete.
     public nonisolated func run(
-        _ fx: Fx<Mailbox.Action>
+        _ fx: Fx<T.Action>
     ) {
         for effect in fx.effects {
             Task {
                 let action = await effect()
-                await self.mailbox?.send(action)
+                await self.subject?.send(action)
             }
         }
     }
@@ -161,6 +171,8 @@ actor EffectRunner<Mailbox: MailboxProtocol & AnyObject> {
 /// `Model.update(action:environment:)`. This ensures there is only one code
 /// path that can modify state, making code more easily testable and reliable.
 @Observable public final class Store<Model: ModelProtocol>: StoreProtocol {
+    /// Turn logging on and off
+    @ObservationIgnored var isLoggingEnabled: Bool
     /// Logger for store. You can customize this in the initializer.
     @ObservationIgnored var logger: Logger
     /// Runs all effects returned by model update function.
@@ -168,13 +180,13 @@ actor EffectRunner<Mailbox: MailboxProtocol & AnyObject> {
     /// Environment contains services that can be used by the update function
     /// to generate side effects such as DB queries or API calls.
     @ObservationIgnored public var environment: Model.Environment
-    
+
     /// A read-only view of the current state.
     /// Nested models and other reference types should also mark their
     /// properties read-only. All state updates should go through
     /// `Model.update()`.
     public private(set) var state: Model
-    
+
     /// Create a Store
     /// - Parameters:
     ///   - state: the initial state for the store. Must conform to
@@ -184,23 +196,48 @@ actor EffectRunner<Mailbox: MailboxProtocol & AnyObject> {
     public init(
         state: Model,
         environment: Model.Environment,
+        isLoggingEnabled: Bool = false,
         logger: Logger = Logger(
-            subsystem: "ObservableStore",
+            subsystem: "Arboreal",
             category: "Store"
         )
     ) {
         self.state = state
         self.environment = environment
+        self.isLoggingEnabled = isLoggingEnabled
         self.logger = logger
     }
-    
+
+    /// Create a store, sending an initail action
+    public convenience init(
+        state: Model,
+        environment: Model.Environment,
+        action: Model.Action,
+        isLoggingEnabled: Bool = false,
+        logger: Logger = Logger(
+            subsystem: "Arboreal",
+            category: "Store"
+        )
+    ) {
+        self.init(
+            state: state,
+            environment: environment,
+            isLoggingEnabled: isLoggingEnabled,
+            logger: logger
+        )
+        self.send(action)
+    }
+
     /// Send an action to store, updating state, and running effects.
     /// Calls the update method of the underlying model to update state and
     /// generate effects. Effects are run and the resulting actions are sent
     /// back into store, in whatever order the effects complete.
-    @MainActor public func send(_ action: Model.Action) -> Void {
-        let actionDescription = String(describing: action)
-        logger.debug("Action: \(actionDescription)")
+    /// Ensures that mutation happens on the main actor.
+    @MainActor public func transact(_ action: Model.Action) {
+        if isLoggingEnabled {
+            let actionString = String(describing: action)
+            logger.debug("Action: \(actionString, privacy: .public)")
+        }
         let fx = state.update(
             action: action,
             environment: environment
@@ -245,7 +282,7 @@ public struct ViewStore<Model: ModelProtocol>: StoreProtocol {
     }
 
     /// Send an action to the underlying store through ViewStore.
-    @MainActor public func send(_ action: Model.Action) {
+    @MainActor public func transact(_ action: Model.Action) {
         self._send(action)
     }
 }
@@ -278,7 +315,7 @@ extension Binding {
         self.init(
             get: { get(store.state) },
             set: { value in
-                store.send(tag(value))
+                store.transact(tag(value))
             }
         )
     }
