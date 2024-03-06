@@ -26,7 +26,7 @@ final class ArborealTests: XCTestCase {
     }
     
     /// Test creating binding for an address
-    func testSend() async throws {
+    func testTransact() async throws {
         let store = Store(
             state: Model(),
             environment: ()
