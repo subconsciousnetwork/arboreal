@@ -269,56 +269,52 @@ actor EffectRunner<T: TransactableProtocol & AnyObject> {
     }
 }
 
-/// Create a ViewStore, a scoped view over a store.
-/// ViewStore is conceptually like a SwiftUI Binding. However, instead of
-/// offering get/set for some source-of-truth, it offers a StoreProtocol.
+/// Create a ViewStore that holds a reference to a model that is part of a
+/// larger store.
 ///
-/// Using ViewStore, you can create self-contained views that work with their
-/// own domain
+/// Uses a closure to forward actions up to a parent store, which performs
+/// the transaction and manages side-effects. ViewStores can be nested many
+/// levels deep, and the actions forwarded up the chain until they are
+/// received by the root store and the effects run.
 public struct ViewStore<Model: ModelProtocol>: StoreProtocol {
-    /// `_get` reads some source of truth dynamically, using a closure.
-    ///
-    /// NOTE: We've found this to be important for some corner cases in
-    /// SwiftUI components, where capturing the state by value may produce
-    /// unexpected issues. Examples are input fields and NavigationStack,
-    /// which both expect a Binding to a state (which dynamically reads
-    /// the value using a closure). Using the same approach as Binding
-    /// offers the most reliable results.
-    private var _get: () -> Model
-    private var _send: (Model.Action) -> Void
+    private var _transact: @MainActor (Model.Action) -> Void
+
+    /// Get the current state from the underlying model.
+    public private(set) var state: Model
 
     /// Initialize a ViewStore from a `get` closure and a `send` closure.
     /// These closures read from a parent store to provide a type-erased
     /// view over the store that only exposes domain-specific
     /// model and actions.
     public init(
-        get: @escaping () -> Model,
-        send: @escaping (Model.Action) -> Void
+        state: Model,
+        transact: @escaping @MainActor (Model.Action) -> Void
     ) {
-        self._get = get
-        self._send = send
-    }
-
-    /// Get the current state from the underlying model.
-    public var state: Model {
-        self._get()
+        self.state = state
+        self._transact = transact
     }
 
     /// Send an action to the underlying store through ViewStore.
     @MainActor public func transact(_ action: Model.Action) {
-        self._send(action)
+        return self._transact(action)
     }
 }
 
 extension StoreProtocol {
-    /// Create a viewStore from a StoreProtocol
+    /// Create a viewStore from a store
+    /// - Parameters:
+    ///   - get: a closure or keypath to get the child model from the parent
+    ///     store's model
+    ///   - tag: a closure to tag a child action, making it a parent store
+    ///     action
+    /// - Returns: a ViewStore for the child model
     public func viewStore<ChildModel: ModelProtocol>(
         get: @escaping (Model) -> ChildModel,
         tag: @escaping (ChildModel.Action) -> Action
     ) -> ViewStore<ChildModel> {
         ViewStore(
-            get: { get(self.state) },
-            send: { action in self.send(tag(action)) }
+            state: get(self.state),
+            transact: { @MainActor action in self.transact(tag(action)) }
         )
     }
 }
