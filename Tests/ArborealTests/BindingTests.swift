@@ -10,6 +10,7 @@ import SwiftUI
 import Observation
 @testable import Arboreal
 
+@MainActor
 final class BindingTests: XCTestCase {
     enum Action: Hashable {
         case setText(String)

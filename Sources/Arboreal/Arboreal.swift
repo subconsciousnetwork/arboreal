@@ -54,7 +54,7 @@ extension ModelProtocol {
 public protocol TransactableProtocol {
     associatedtype Action
 
-    func transact(_ action: Action)
+    @MainActor func transact(_ action: Action)
 }
 
 extension TransactableProtocol {
@@ -72,7 +72,7 @@ public protocol StoreProtocol: TransactableProtocol {
     associatedtype Model: ModelProtocol where Model.Action == Action
 
     /// State should be get-only for stores.
-    var state: Model { get }
+    @MainActor var state: Model { get }
 }
 
 /// Fx represents a collection of side-effects... things like http requests
@@ -173,7 +173,7 @@ actor EffectRunner<T: TransactableProtocol & AnyObject> {
         for effect in fx.effects {
             Task {
                 let action = await effect()
-                await self.subject?.send(action)
+                await self.subject?.transact(action)
             }
         }
     }
@@ -193,7 +193,9 @@ actor EffectRunner<T: TransactableProtocol & AnyObject> {
 /// models with `private(set)`, so that all updates are forced to go through
 /// `Model.update(action:environment:)`. This ensures there is only one code
 /// path that can modify state, making code more easily testable and reliable.
-@Observable public final class Store<Model: ModelProtocol>: StoreProtocol {
+@Observable
+@MainActor
+public final class Store<Model: ModelProtocol>: StoreProtocol {
     /// Turn logging on and off
     @ObservationIgnored var isLoggingEnabled: Bool
     /// Logger for store. You can customize this in the initializer.
@@ -256,7 +258,7 @@ actor EffectRunner<T: TransactableProtocol & AnyObject> {
     /// generate effects. Effects are run and the resulting actions are sent
     /// back into store, in whatever order the effects complete.
     /// Ensures that mutation happens on the main actor.
-    @MainActor public func transact(_ action: Model.Action) {
+    public func transact(_ action: Model.Action) {
         if isLoggingEnabled {
             let actionString = String(describing: action)
             logger.debug("Action: \(actionString, privacy: .public)")
@@ -276,6 +278,7 @@ actor EffectRunner<T: TransactableProtocol & AnyObject> {
 /// the transaction and manages side-effects. ViewStores can be nested many
 /// levels deep, and the actions forwarded up the chain until they are
 /// received by the root store and the effects run.
+@MainActor
 public struct ViewStore<Model: ModelProtocol>: StoreProtocol {
     private var _transact: @MainActor (Model.Action) -> Void
 
@@ -295,7 +298,7 @@ public struct ViewStore<Model: ModelProtocol>: StoreProtocol {
     }
 
     /// Send an action to the underlying store through ViewStore.
-    @MainActor public func transact(_ action: Model.Action) {
+    public func transact(_ action: Model.Action) {
         return self._transact(action)
     }
 }
@@ -308,7 +311,7 @@ extension StoreProtocol {
     ///   - tag: a closure to tag a child action, making it a parent store
     ///     action
     /// - Returns: a ViewStore for the child model
-    public func viewStore<ChildModel: ModelProtocol>(
+    @MainActor public func viewStore<ChildModel: ModelProtocol>(
         get: @escaping (Model) -> ChildModel,
         tag: @escaping (ChildModel.Action) -> Action
     ) -> ViewStore<ChildModel> {
@@ -326,16 +329,14 @@ extension Binding {
     ///   - `get` reads the value from the state.
     ///   - `tag` tags the value, turning it into an action for `send`
     /// - Returns a binding suitable for use in a vanilla SwiftUI view.
-    public init<Store: StoreProtocol>(
+    @MainActor public init<Store: StoreProtocol>(
         store: Store,
         get: @escaping (Store.Model) -> Value,
         tag: @escaping (Value) -> Store.Model.Action
     ) {
         self.init(
             get: { get(store.state) },
-            set: { value in
-                store.transact(tag(value))
-            }
+            set: { value in store.transact(tag(value)) }
         )
     }
 }
@@ -346,7 +347,7 @@ extension StoreProtocol {
     ///   - `get` reads the value from the state.
     ///   - `tag` tags the value, turning it into an action for `send`
     /// - Returns a binding suitable for use in a vanilla SwiftUI view.
-    public func binding<Value>(
+    @MainActor public func binding<Value>(
         get: @escaping (Model) -> Value,
         tag: @escaping (Value) -> Action
     ) -> Binding<Value> {

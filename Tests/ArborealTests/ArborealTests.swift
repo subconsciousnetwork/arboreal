@@ -26,13 +26,14 @@ final class ArborealTests: XCTestCase {
     }
     
     /// Test creating binding for an address
-    func testTransact() async throws {
+    @MainActor
+    func testTransact() throws {
         let store = Store(
             state: Model(),
             environment: ()
         )
         
-        await store.transact(.setText("Foo"))
+        store.transact(.setText("Foo"))
 
         XCTAssertEqual(
             store.state.text,

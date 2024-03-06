@@ -12,6 +12,7 @@ import Arboreal
 import SwiftUI
 import Combine
 
+@MainActor
 class UpdateActionsTests: XCTestCase {
     enum TestAction: Hashable {
         case increment
