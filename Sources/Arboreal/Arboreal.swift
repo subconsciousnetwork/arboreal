@@ -135,10 +135,10 @@ public struct Fx<Action> {
     ///
     ///     child
     ///         .update(action: action, environment: environment)
-    ///         .map(tagChild)
+    ///         .tag(tagChild)
     ///
     /// - Returns a new Fx containing the tagged effects.
-    public func map<TaggedAction>(
+    public func tag<TaggedAction>(
         _ tag: @escaping (Action) -> TaggedAction
     ) -> Fx<TaggedAction> {
         Fx<TaggedAction>(
