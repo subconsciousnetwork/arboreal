@@ -27,13 +27,13 @@ final class ArborealTests: XCTestCase {
     
     /// Test creating binding for an address
     @MainActor
-    func testTransact() throws {
+    func testSend() throws {
         let store = Store(
             state: Model(),
             environment: ()
         )
         
-        store.transact(.setText("Foo"))
+        store.send(.setText("Foo"))
 
         XCTAssertEqual(
             store.state.text,

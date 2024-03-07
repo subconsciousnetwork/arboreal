@@ -88,7 +88,7 @@ final class ViewStoreTests: XCTestCase {
             tag: ParentAction.tag
         )
 
-        await viewStore.transact(.setText("Foo"))
+        await viewStore.send(.setText("Foo"))
 
         XCTAssertEqual(
             store.state.child.text,
