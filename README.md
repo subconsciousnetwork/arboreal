@@ -4,7 +4,7 @@ A simple Elm-like Store for SwiftUI.
 
 Arboreal helps you craft more reliable apps, by centralizing all of your application state into one place and giving you a deterministic system for managing state changes and side-effects. All state changes happen through actions passed to an update function. This guarantees your application will produce exactly the same state, given the same actions in the same order. If you’ve ever used [Elm](https://guide.elm-lang.org/architecture/) or [Redux](https://redux.js.org/), you get the gist.
 
-Arboreal's `Store` based on the  [@Observable macro](https://developer.apple.com/documentation/observation) for fine-grained reactivity. This means you can centralize all of your application state while achieving the same fast performance you would get with localized view state. Store works just like any `@Observable`. State can passed down to sub-views as `@Binding` or as ordinary properties. You can also create scoped child stores with `ViewStore`, 
+Arboreal's store class is based on the  [@Observable macro](https://developer.apple.com/documentation/observation) for fine-grained reactivity. This means you can centralize all of your application state while achieving the same performance you would get with localized view state. Store works just like any `@Observable`. State can passed down to sub-views as `@Binding` or as ordinary properties. You can also create scoped child stores with `ViewStore`, 
 
 ## Example
 
