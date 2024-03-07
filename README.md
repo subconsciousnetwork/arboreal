@@ -12,7 +12,6 @@ A minimal example of Store used to increment a count with a button.
 
 ```swift
 import SwiftUI
-import Combine
 import Arboreal
 
 /// Actions
