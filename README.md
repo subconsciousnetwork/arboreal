@@ -80,7 +80,8 @@ Store exposes a single observed property, `state`, which represents your applica
 ```swift
 @Observable
 class AppModel: ModelProtocol {
-    var count = 0
+    /// Mark prop get-only so that model can only be updated via update method
+    private(set) var count = 0
 
     /// Update method
     /// Modifies state and returns any side-effects
