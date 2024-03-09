@@ -8,6 +8,7 @@
 import SwiftUI
 import Observation
 import os
+import Combine
 
 /// State is described with models.
 /// A model is any type that knows how to update itself in response to actions.
@@ -191,6 +192,13 @@ public final class Store<Model: ModelProtocol>: StoreProtocol {
     /// to generate side effects such as DB queries or API calls.
     @ObservationIgnored public var environment: Model.Environment
 
+    @ObservationIgnored public var _didChange =
+        PassthroughSubject<Model.Action, Never>()
+
+    var didChange: AnyPublisher<Model.Action, Never> {
+        _didChange.eraseToAnyPublisher()
+    }
+
     /// A read-only view of the current state.
     /// Nested models and other reference types should also mark their
     /// properties read-only. All state updates should go through
@@ -252,6 +260,7 @@ public final class Store<Model: ModelProtocol>: StoreProtocol {
             action: action,
             environment: environment
         )
+        _didChange.send(action)
         runner.run(fx)
     }
 }
