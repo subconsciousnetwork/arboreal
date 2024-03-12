@@ -289,7 +289,7 @@ public struct ViewStore<Model: ArborealModel>: ArborealStore {
 }
 
 extension ArborealStore {
-    /// Create a viewStore from a store
+    /// Create a ViewStore from a store
     /// - Parameters:
     ///   - get: a closure or keypath to get the child model from the parent
     ///     store's model
@@ -304,6 +304,17 @@ extension ArborealStore {
             state: get(self.state),
             send: { action in self.send(tag(action)) }
         )
+    }
+
+    /// Create a ViewStore version of a store
+    /// - Parameters:
+    ///   - get: a closure or keypath to get the child model from the parent
+    ///     store's model
+    ///   - tag: a closure to tag a child action, making it a parent store
+    ///     action
+    /// - Returns: a ViewStore for model contained by the store
+    @MainActor public func viewStore() -> ViewStore<Model> {
+        ViewStore(state: self.state, send: self.send)
     }
 }
 
