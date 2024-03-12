@@ -8,7 +8,7 @@ final class ArborealTests: XCTestCase {
     }
 
     @Observable
-    class Model: ModelProtocol {
+    class Model: ArborealModel {
         private(set) var text = ""
         private(set) var edits: Int = 0
         

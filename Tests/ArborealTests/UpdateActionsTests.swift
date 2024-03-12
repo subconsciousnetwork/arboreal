@@ -12,7 +12,6 @@ import Arboreal
 import SwiftUI
 import Combine
 
-@MainActor
 class UpdateActionsTests: XCTestCase {
     enum TestAction: Hashable {
         case increment
@@ -23,7 +22,7 @@ class UpdateActionsTests: XCTestCase {
     }
 
     @Observable
-    class TestModel: ModelProtocol {
+    class TestModel: ArborealModel {
         typealias Action = TestAction
         typealias Environment = Void
 
@@ -68,6 +67,7 @@ class UpdateActionsTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testUpdateActions() throws {
         let store = Store(
             state: TestModel(),

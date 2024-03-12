@@ -24,7 +24,7 @@ final class ViewStoreTests: XCTestCase {
     }
 
     @Observable
-    class ParentModel: ModelProtocol {
+    class ParentModel: ArborealModel {
         private(set) var child = ChildModel(text: "")
         private(set) var edits: Int = 0
 
@@ -55,7 +55,7 @@ final class ViewStoreTests: XCTestCase {
     }
 
     @Observable
-    class ChildModel: ModelProtocol {
+    class ChildModel: ArborealModel {
         private(set) var text: String
 
         init(text: String = "") {
