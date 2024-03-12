@@ -23,11 +23,11 @@ enum AppAction {
 actor AppEnvironment {
 }
 
-/// Conform your model to `ModelProtocol`.
-/// A `ModelProtocol` is an `@Observable` with an update function like the
+/// Conform your model to `ArborealModel`.
+/// A `ArborealModel` is an `@Observable` with an update function like the
 /// one below.
 @Observable
-class AppModel: ModelProtocol {
+class AppModel: ArborealModel {
     /// Mark prop get-only so that model can only be updated via update method
     private(set) var count = 0
 
@@ -73,13 +73,13 @@ struct AppView: View {
 
 A `Store` is a source of truth for application state. It's an [@Observable](https://developer.apple.com/documentation/observation), so you can use it anywhere in SwiftUI that you would use an observable model.
 
-Store exposes a single observed property, `state`, which represents your application state. `state` can be any `@Observable` type that conforms to `ModelProtocol`.
+Store exposes a single observed property, `state`, which represents your application state. `state` can be any `@Observable` type that conforms to `ArborealModel`.
 
-`state` is read-only, and it's best practice to mark your model properties read-only too, so they can't be updated directly. Instead, all state changes are performed by an update method that you implement as part of `ModelProtocol`.
+`state` is read-only, and it's best practice to mark your model properties read-only too, so they can't be updated directly. Instead, all state changes are performed by an update method that you implement as part of `ArborealModel`.
 
 ```swift
 @Observable
-class AppModel: ModelProtocol {
+class AppModel: ArborealModel {
     /// Mark prop get-only so that model can only be updated via update method
     private(set) var count = 0
 
@@ -153,7 +153,7 @@ Button("Set color to red") {
 
 ## Bindings
 
-`StoreProtocol.binding(get:tag:)` lets you create a [binding](https://developer.apple.com/documentation/swiftui/binding) that represents some part of a store state. The `get` closure reads the state into a value, and the `tag` closure wraps the value set on the binding in an action. The result is a binding that can be passed to any vanilla SwiftUI view, changing state only through deterministic updates.
+`ArborealStore.binding(get:tag:)` lets you create a [binding](https://developer.apple.com/documentation/swiftui/binding) that represents some part of a store state. The `get` closure reads the state into a value, and the `tag` closure wraps the value set on the binding in an action. The result is a binding that can be passed to any vanilla SwiftUI view, changing state only through deterministic updates.
 
 ```swift
 TextField(
@@ -167,7 +167,7 @@ TextField(
 
 ## Creating scoped child components
 
-We can also create `ViewStore`s that represent just a scoped part of the root store. You can think of them as being like a binding, but they expose a `StoreProtocol` interface, instead of a binding interface. This allows you to create apps from free-standing components that all have their own local state, actions, and update functions, but share the same underlying root store.
+We can also create `ViewStore`s that represent just a scoped part of the root store. You can think of them as being like a binding, but they expose a `ArborealStore` interface, instead of a binding interface. This allows you to create apps from free-standing components that all have their own local state, actions, and update functions, but share the same underlying root store.
 
 Imagine we have a SWiftUI child view that looks something like this:
 
@@ -178,7 +178,7 @@ enum ChildAction {
 }
 
 @Observable
-class ChildModel: ModelProtocol {
+class ChildModel: ArborealModel {
     private(set) var count: Int = 0
 
     func update(
@@ -234,7 +234,7 @@ struct ContentView: View {
 }
 ```
 
-Note that `.viewStore(get:tag:)` is an extension of `StoreProtocol`, so you can call it on `Store` or `ViewStore` to create arbitrarily nested components!
+Note that `.viewStore(get:tag:)` is an extension of `ArborealStore`, so you can call it on `Store` or `ViewStore` to create arbitrarily nested components!
 
 Next, we want to integrate the child's update function into the parent update function. We forward down any actions we want the child to handle, and then tag its return `Fx` to transform the actions it produces to parent actions. 
 
@@ -244,7 +244,7 @@ enum AppAction {
 }
 
 @Observable
-class AppModel: ModelProtocol {
+class AppModel: ArborealModel {
     private(set) var child = ChildModel()
 
     func update(
