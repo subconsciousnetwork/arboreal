@@ -43,7 +43,7 @@ public final class DidChangeDecorator<Model: ModelProtocol>:
     }
 
     @MainActor
-    subscript<T>(dynamicMember keyPath: KeyPath<Model, T>) -> T {
+    public subscript<T>(dynamicMember keyPath: KeyPath<Model, T>) -> T {
         state[keyPath: keyPath]
     }
 
