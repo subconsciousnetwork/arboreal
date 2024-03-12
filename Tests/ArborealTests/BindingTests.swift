@@ -10,14 +10,13 @@ import SwiftUI
 import Observation
 @testable import Arboreal
 
-@MainActor
 final class BindingTests: XCTestCase {
     enum Action: Hashable {
         case setText(String)
     }
     
     @Observable
-    class Model: ModelProtocol {
+    class Model: ArborealModel {
         private(set) var text = ""
         private(set) var edits: Int = 0
         
@@ -44,6 +43,7 @@ final class BindingTests: XCTestCase {
     }
     
     /// Test creating binding for an address
+    @MainActor
     func testBinding() throws {
         let store = Store(
             state: Model(),
@@ -72,6 +72,7 @@ final class BindingTests: XCTestCase {
     }
     
     /// Test creating binding for an address
+    @MainActor
     func testBindingMethod() throws {
         let store = Store(
             state: Model(),

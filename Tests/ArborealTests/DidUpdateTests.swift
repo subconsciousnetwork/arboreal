@@ -1,5 +1,5 @@
 //
-//  DidChangeTests.swift
+//  DidUpdateTests.swift
 //  
 //
 //  Created by Gordon Brander on 3/12/24.
@@ -10,7 +10,7 @@ import Observation
 import Combine
 @testable import Arboreal
 
-final class DidChangeTests: XCTestCase {
+final class DidUpdateTests: XCTestCase {
     actor TestEnvironment {}
 
     enum TestAction: Hashable {
@@ -18,7 +18,7 @@ final class DidChangeTests: XCTestCase {
     }
 
     @Observable
-    final class TestModel: ModelProtocol {
+    final class TestModel: ArborealModel {
         typealias Action = TestAction
         typealias Environment = TestEnvironment
 
@@ -43,16 +43,16 @@ final class DidChangeTests: XCTestCase {
     }
 
     @MainActor
-    func testDidChangePublisher() throws {
+    func testDidUpdatePublisher() throws {
         let store = Store(
-            state: DidChangeDecorator(TestModel()),
+            state: DidUpdateDecorator(TestModel()),
             environment: TestEnvironment()
         )
 
         var count = 0
         var actions = Set<TestAction>()
 
-        let cancellable = store.state.didChange.sink(receiveValue: { action in
+        let cancellable = store.state.didUpdate.sink(receiveValue: { action in
             count = store.state.state.count
             actions.insert(action)
         })
@@ -70,16 +70,16 @@ final class DidChangeTests: XCTestCase {
     }
 
     @MainActor
-    func testDidChangePublisherStoreExtension() throws {
+    func testDidUpdatePublisherStoreExtension() throws {
         let store = Store(
-            state: DidChangeDecorator(TestModel()),
+            state: DidUpdateDecorator(TestModel()),
             environment: TestEnvironment()
         )
 
         var count = 0
         var actions = Set<TestAction>()
 
-        let cancellable = store.didChange.sink(receiveValue: { action in
+        let cancellable = store.didUpdate.sink(receiveValue: { action in
             count = store.state.state.count
             actions.insert(action)
         })
@@ -99,7 +99,7 @@ final class DidChangeTests: XCTestCase {
     @MainActor
     func testDynamicPropertyAccess() throws {
         let store = Store(
-            state: DidChangeDecorator(TestModel()),
+            state: DidUpdateDecorator(TestModel()),
             environment: TestEnvironment()
         )
 
@@ -109,11 +109,11 @@ final class DidChangeTests: XCTestCase {
     @MainActor
     func testDeepObservationThroughDynamicPropertyAccess() throws {
         let store = Store(
-            state: DidChangeDecorator(TestModel()),
+            state: DidUpdateDecorator(TestModel()),
             environment: TestEnvironment()
         )
 
-        let expectation = XCTestExpectation(description: "didChange fired")
+        let expectation = XCTestExpectation(description: "didUpdate fired")
 
         withObservationTracking(
             {
